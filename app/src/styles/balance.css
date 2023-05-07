@@ -1,0 +1,29 @@
+
+.balance-wrapper .balance {
+    margin-bottom: 30px;
+    justify-content: center;
+}
+
+.balance-wrapper {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.operations {
+    text-align: center;
+}
+
+.balance-wrapper .operations-button {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-around;
+}
+
+.operations-button button {
+    min-width: 100px;
+}
+
+.operations-button {
+    width: 300px;
+}

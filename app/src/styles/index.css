@@ -45,31 +45,12 @@ body{
   padding: 15px;
 }
 
-.app-inner .balance {
-  margin-bottom: 30px;
-  justify-content: center;
-}
-
-.app-inner {
+.App-inner {
   display: flex;
-  align-items: center;
   flex-direction: column;
+  align-items: center;
 }
 
-.operations {
-  text-align: center;
-}
-
-.app-inner .operations-button {
-  margin-top: 20px;
-  display: flex;
-  justify-content: space-around;
-}
-
-.operations-button button {
-  min-width: 100px;
-}
-
-.operations-button {
-  width: 300px;
+.App-inner-item {
+  margin-top: 30px;
 }
