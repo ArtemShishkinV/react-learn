@@ -45,12 +45,3 @@ body{
   padding: 15px;
 }
 
-.App-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.App-inner-item {
-  margin-top: 30px;
-}

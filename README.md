@@ -1,231 +1,132 @@
-# Урок-2
-## Создание классовых и функциональных компонентов
+# Урок-3
+## Получение данных с сервера и отображение их на странице.
+### Axios, useEffect и жизненный цикл компонента.
 
-### Создание функционального компонента
+Для примера с помощью запроса получим список todos с сайта: https://jsonplaceholder.typicode.com/
 
-Для повторного использования компонентов и организации чистого кода, целесообразно выносить код, отвечающий за создание конкретного компонента в отдельный jsx файл
+<hr>
 
-#### App.js (до рефакторинга)
+#### Axios
+
+Библиотека для отправки запросов на сервер. Предварительно необходимо установить с помощью `npm i install`
+
+#### Получение списка задач с сервера
+
 ```javascript
 function App() {
-    const [balance, updateBalance] = useState(0);
-    const [quantity, updateQuantity] = useState(0);
+    const [todos, updateTodos] = useState([]);
 
-    function withdraw() {
-        let newValue = balance - quantity
-        if (newValue < 0) {
-            alert("Negative balance!")
-            return
-        }
-        updateBalance(balance - quantity)
+    async function getTodos() {
+        const response = await axios.get("https://jsonplaceholder.typicode.com/todos")
+        console.log(response.data)
     }
 
-    function topUp() {
-        updateBalance(balance + quantity)
-    }
-    
+
     return (
         <div className="App">
             <div className="container">
-                <div className="app-inner">
-                    <div className="balance">
-                        Your balance: {balance}
-                    </div>
-                    <div className="operations">
-                        <input
-                            type="number"
-                            value={quantity}
-                            min="0"
-                            max="1000"
-                            onChange={event => updateQuantity(parseInt(event.target.value))}
-                        />
-                        <div className="operations-button">
-                            <button onClick={withdraw}>Снять</button>
-                            <button onClick={topUp}>Пополнить</button>
-                        </div>
-                    </div>
-                </div>
+                <h1>Список задач</h1>
+                <button onClick={getTodos}>Загрузить задачи</button>
             </div>
         </div>
     );
 }
 ```
-Теперь вынесем компонент, отвечающий за изменение баланса в отдельный файл. Для этого создадим в корне папку **components**, а внутри нее файл с именем **Balance.jsx**
 
-Для быстрого создания функционального компонента используется **rsc -> tab**.
+Для того чтобы прогружать список задач сразу, а не по нажатию на кнопку, необходимо воспользоваться хуком `useEffect(callback, deps)`.
+Его работу можно настроить гибко, за счет второго параметра `deps`. Есть три возможных варианта, когда срабатывает этот хук, что связано с жизненным циклом компонента.
+##### deps = []
 
-#### components/Balance.jsx
+Срабатывает при [монтировании](#mount) компонента.
+
 ```javascript
-import React, {useState} from 'react';
-import '../styles/balance.css';
+useEffect(() => {
+    function()
+}, [])
+```
 
-const Balance = () => {
-    const [balance, updateBalance] = useState(0);
-    const [quantity, updateQuantity] = useState(0);
+##### deps = [filter]
 
-    function withdraw() {
-        let newValue = balance - quantity
-        if (newValue < 0) {
-            alert("Negative balance!")
-            return
-        }
-        updateBalance(balance - quantity)
+`filter` - какой-то компонент, который обновляется. В данном случае, `useEffect()` срабатывает при каждом [обновлении компонента](#update) `filter`.
+
+```javascript
+const [filter, updateFilter] = useState({sort: ''});
+
+useEffect(() => {
+    function()
+}, [filter])
+```
+
+##### deps = [] + return()
+
+Срабатывает на этапе [размонтирования](#unmount).
+
+```javascript
+useEffect(() => {
+    function()
+    
+    return () => {
+        clear() //Что-то очищаем
+    }
+}, [])
+```
+<hr>
+
+#### Жизненный цикл компонента
+
+Каждый компонент проходит следующий жизненный цикл:
+* **Монтирование(mount)** - выполняется один раз при вставке в DOM-дерево. В этот момент подгружаются необходимые данные, вешаются слушатели событий и т.д.<a id="mount"></a>
+* **Обновление(update)** - выполняется каждый раз, когда мы совершаем какие-либо изменения компонента(фильтрация, сортировка, удаление элемента из списка, изменение значение компонента и т.д.)<a id="update"></a>
+* **Размонтирование(unmount)** - выполняется один раз при удалении из компонента из DOM-дерева. На данном этапе отписываемся от слушателей событий, очищаем хранилища и т.д.<a id="unmount"></a>
+
+<hr>
+
+#### Использования useEffect для загрузки задач
+
+##### App.js
+```javascript
+function App() {
+    const [todos, updateTodos] = useState([]);
+
+    useEffect(() => {
+        getTodos()
+    }, [])
+
+    async function getTodos() {
+        const response = await axios.get("https://jsonplaceholder.typicode.com/todos")
+        updateTodos(response.data)
+        console.log(todos)
     }
 
-    function topUp() {
-        updateBalance(balance + quantity)
-    }
+
     return (
-        <div className="balance-wrapper">
-            <div className="balance">
-                Your balance: {balance}
+        <div className="App">
+            <div className="container">
+                <h1>Список задач</h1>
+                {todos.map((todo) =>
+                    <TodoItem todo={todo} key={todo.id}/>
+                )}
             </div>
-            <div className="operations">
-                <input
-                    type="number"
-                    value={quantity}
-                    min="0"
-                    max="1000"
-                    onChange={event => updateQuantity(parseInt(event.target.value))}
-                />
-                <div className="operations-button">
-                    <button onClick={withdraw}>Снять</button>
-                    <button onClick={topUp}>Пополнить</button>
-                </div>
-            </div>
+        </div>
+    );
+}
+```
+
+##### TodoItem.jsx
+```javascript
+const TodoItem = (props) => {
+    function showCompleted(isComplete) {
+        if (isComplete) {
+            return <span style={{color: "green"}}>Выполнено!</span>
+        }
+        return <span style={{color: "red"}}>Ожидает выполнения!</span>
+    }
+
+    return (
+        <div className="todo">
+            <div className="todo-title">{props.todo.title}</div>
+            <div className="todo-completed">{showCompleted(props.todo.completed)}</div>
         </div>
     );
 };
-
-export default Balance;
 ```
-
-Теперь в основном файле можно создать два компонента `<Balance>`, предварительно импортировав его.
-
-Созданные компоненты будут независимы друг от друга.
-
-#### App.js
-```javascript
-import React from "react";
-import './styles/index.css';
-import Balance from "./components/Balance";
-
-function App() {
-
-
-    return (
-        <div className="App">
-            <div className="container">
-                <div className="App-inner">
-                    <div className="App-inner-item">
-                        <h2>Иванов Иван Иванович</h2>
-                        <Balance/>
-                    </div>
-                    <div className="App-inner-item">
-                        <h2>Петров Петр Петрович</h2>
-                        <Balance/>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-export default App;
-
-```
-
-### Создание классового компонента
-
-Все тоже самое можно сделать с использованием классового компонента. Это устаревший подход, но знать о нем стоит, так как легаси код преследует нас.
-
-#### components/ClassBalance.jsx
-```javascript
-import React, {Component} from 'react';
-import '../styles/balance.css';
-
-class ClassBalance extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            balance: 0,
-            quantity: 0
-        }
-        this.topUp = this.topUp.bind(this)
-        this.withdraw = this.withdraw.bind(this)
-    }
-
-    withdraw() {
-        let newValue = this.state.balance - this.state.quantity
-        if (newValue < 0) {
-            alert("Negative balance!")
-            return
-        }
-        this.setState({balance: newValue})
-    }
-
-    topUp() {
-        this.setState({balance: this.state.balance + this.state.quantity})
-    }
-
-    render() {
-        return (
-            <div className="balance-wrapper">
-                <div className="balance">
-                    Your balance: {this.state.balance}
-                </div>
-                <div className="operations">
-                    <input
-                        type="number"
-                        value={this.state.quantity}
-                        min="0"
-                        max="1000"
-                        onChange={event => this.setState({quantity: parseInt(event.target.value)})}
-                    />
-                    <div className="operations-button">
-                        <button onClick={this.withdraw}>Снять</button>
-                        <button onClick={this.topUp}>Пополнить</button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-}
-
-export default ClassBalance;
-```
-
-В основном файл нужно сделать небольшое изменение - заменим `<Balance>` на `<ClassBalance>`.
-
-#### App.jsx
-```javascript
-import React from "react";
-import './styles/index.css';
-import ClassBalance from "./components/ClassBalance";
-
-function App() {
-
-
-    return (
-        <div className="App">
-            <div className="container">
-                <div className="App-inner">
-                    <div className="App-inner-item">
-                        <h2>Иванов Иван Иванович</h2>
-                        <ClassBalance/>
-                    </div>
-                    <div className="App-inner-item">
-                        <h2>Петров Петр Петрович</h2>
-                        <ClassBalance/>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-export default App;
-
-```
-
-
